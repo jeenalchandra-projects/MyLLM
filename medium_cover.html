@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Medium Cover</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      width: 1200px;
+      height: 675px;
+      overflow: hidden;
+      background: #080C12;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* ── Canvas ── */
+    .scene {
+      position: relative;
+      width: 1200px;
+      height: 675px;
+      overflow: hidden;
+    }
+
+    /* ── Neural net SVG background ── */
+    #neural-canvas {
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+    }
+
+    /* ── Gradient overlay left→right ── */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(105deg,
+          #080C12 0%,
+          #080C12 42%,
+          rgba(8,12,18,0.82) 58%,
+          rgba(8,12,18,0.3) 100%
+        );
+      z-index: 2;
+    }
+
+    /* ── Red accent bar ── */
+    .accent-bar {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: linear-gradient(to bottom, transparent 10%, #CC0000 40%, #FF2020 60%, transparent 90%);
+      z-index: 5;
+    }
+
+    /* ── Content ── */
+    .content {
+      position: absolute;
+      left: 68px;
+      top: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      z-index: 10;
+      max-width: 620px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .eyebrow-line {
+      width: 32px;
+      height: 2px;
+      background: #CC0000;
+    }
+    .eyebrow-text {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #CC0000;
+    }
+
+    h1 {
+      font-size: 3.8rem;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      color: #FFFFFF;
+      margin-bottom: 22px;
+    }
+    h1 em {
+      font-style: normal;
+      color: transparent;
+      -webkit-text-stroke: 1.5px rgba(255,255,255,0.5);
+    }
+
+    .sub {
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.65;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      max-width: 500px;
+      margin-bottom: 36px;
+    }
+
+    /* ── Tags ── */
+    .tags {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      padding: 5px 13px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.38);
+    }
+    .tag.hot {
+      border-color: rgba(204,0,0,0.4);
+      color: rgba(204,0,0,0.8);
+      background: rgba(204,0,0,0.07);
+    }
+
+    /* ── Code block (right side) ── */
+    .code-panel {
+      position: absolute;
+      right: 48px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 400px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      overflow: hidden;
+      z-index: 10;
+      backdrop-filter: blur(2px);
+    }
+
+    .code-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 11px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.03);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #FF5F56; }
+    .dot-y { background: #FEBC2E; }
+    .dot-g { background: #27C840; }
+    .code-filename {
+      margin-left: 8px;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.25);
+      font-family: 'SF Mono', monospace;
+      letter-spacing: 0.04em;
+    }
+
+    pre {
+      padding: 20px 22px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.72rem;
+      line-height: 1.75;
+      color: rgba(255,255,255,0.75);
+      white-space: pre;
+    }
+
+    /* syntax colours */
+    .kw  { color: #C678DD; }
+    .fn  { color: #61AFEF; }
+    .cls { color: #E5C07B; }
+    .str { color: #98C379; }
+    .cmt { color: rgba(255,255,255,0.22); font-style: italic; }
+    .num { color: #D19A66; }
+    .pun { color: rgba(255,255,255,0.4); }
+
+    /* ── Loss badge ── */
+    .badge {
+      position: absolute;
+      bottom: 44px;
+      right: 48px;
+      display: flex;
+      gap: 18px;
+      z-index: 12;
+    }
+    .stat-box {
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .stat-num span { color: #CC0000; }
+    .stat-lbl {
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.28);
+      margin-top: 4px;
+    }
+    .stat-divider {
+      width: 1px;
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* ── Subtle grid ── */
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* ── Glow ── */
+    .glow-red {
+      position: absolute;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(180,0,0,0.12) 0%, transparent 65%);
+      top: -100px; right: 100px;
+      z-index: 1;
+    }
+    .glow-blue {
+      position: absolute;
+      width: 350px; height: 350px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(30,80,180,0.08) 0%, transparent 65%);
+      bottom: -60px; left: 200px;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+<div class="scene">
+
+  <!-- Background layers -->
+  <div class="grid-bg"></div>
+  <div class="glow-red"></div>
+  <div class="glow-blue"></div>
+
+  <!-- Neural network SVG -->
+  <svg id="neural-canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <!-- Gradient fade -->
+  <div class="overlay"></div>
+
+  <!-- Red left bar -->
+  <div class="accent-bar"></div>
+
+  <!-- Main content -->
+  <div class="content">
+    <div class="eyebrow">
+      <div class="eyebrow-line"></div>
+      <span class="eyebrow-text">Automotive Engineer → AI Builder</span>
+    </div>
+
+    <h1>I Built a<br><em>Tiny GPT</em><br>From Scratch</h1>
+
+    <p class="sub">
+      No CS degree. Just Python, PyTorch, and<br>
+      a lot of vehicle data — then fine-tuned it<br>
+      to know everything about Audi.
+    </p>
+
+    <div class="tags">
+      <span class="tag hot">PyTorch</span>
+      <span class="tag hot">Transformers</span>
+      <span class="tag">Self-Attention</span>
+      <span class="tag">Fine-Tuning</span>
+      <span class="tag">Vehicle AI</span>
+    </div>
+  </div>
+
+  <!-- Code panel -->
+  <div class="code-panel">
+    <div class="code-titlebar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="code-filename">04_model.py</span>
+    </div>
+    <pre><span class="kw">class</span> <span class="cls">AttentionHead</span><span class="pun">(</span><span class="cls">nn.Module</span><span class="pun">):</span>
+  <span class="kw">def</span> <span class="fn">forward</span><span class="pun">(</span>self, x<span class="pun">):</span>
+    q <span class="pun">=</span> self<span class="pun">.</span><span class="fn">query</span><span class="pun">(</span>x<span class="pun">)</span>
+    k <span class="pun">=</span> self<span class="pun">.</span><span class="fn">key</span><span class="pun">(</span>x<span class="pun">)</span>
+    v <span class="pun">=</span> self<span class="pun">.</span><span class="fn">value</span><span class="pun">(</span>x<span class="pun">)</span>
+    <span class="cmt"># scaled dot-product attention</span>
+    scores <span class="pun">=</span> q <span class="pun">@</span> k<span class="pun">.</span><span class="fn">transpose</span><span class="pun">(-</span><span class="num">2</span><span class="pun">,-</span><span class="num">1</span><span class="pun">)</span>
+    scores <span class="pun">/=</span> head_size <span class="pun">**</span> <span class="num">0.5</span>
+    weights <span class="pun">=</span> <span class="fn">softmax</span><span class="pun">(</span>scores<span class="pun">)</span>
+    <span class="kw">return</span> weights <span class="pun">@</span> v
+
+<span class="kw">class</span> <span class="cls">MiniGPT</span><span class="pun">(</span><span class="cls">nn.Module</span><span class="pun">):</span>
+  <span class="cmt"># 218K params · 4 layers · 4 heads</span>
+  <span class="kw">def</span> <span class="fn">__init__</span><span class="pun">(</span>self, vocab_size<span class="pun">):</span>
+    self<span class="pun">.</span>blocks <span class="pun">=</span> <span class="cls">nn.Sequential</span><span class="pun">(</span>
+      <span class="pun">*[</span><span class="cls">TransformerBlock</span><span class="pun">()</span>
+        <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span><span class="pun">(</span><span class="num">4</span><span class="pun">)])</span></pre>
+  </div>
+
+  <!-- Stats -->
+  <div class="badge">
+    <div class="stat-box">
+      <div class="stat-num">218<span>K</span></div>
+      <div class="stat-lbl">Parameters</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-box">
+      <div class="stat-num">4.<span>41</span></div>
+      <div class="stat-lbl">Start Loss</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-box">
+      <div class="stat-num">1.<span>20</span></div>
+      <div class="stat-lbl">Final Loss</div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-box">
+      <div class="stat-num">4<span>K+</span></div>
+      <div class="stat-lbl">Train Steps</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Draw a soft neural network in the background
+const svg = document.getElementById('neural-canvas');
+svg.setAttribute('width', 1200);
+svg.setAttribute('height', 675);
+
+const W = 1200, H = 675;
+const layers = [
+  { x: 640, nodes: 6 },
+  { x: 760, nodes: 9 },
+  { x: 880, nodes: 9 },
+  { x: 1000, nodes: 7 },
+  { x: 1120, nodes: 4 },
+];
+
+const nodePositions = [];
+
+layers.forEach((layer, li) => {
+  const positions = [];
+  const spacing = H / (layer.nodes + 1);
+  for (let i = 0; i < layer.nodes; i++) {
+    const y = spacing * (i + 1);
+    positions.push({ x: layer.x, y });
+  }
+  nodePositions.push(positions);
+});
+
+// Draw connections
+for (let li = 0; li < nodePositions.length - 1; li++) {
+  const from = nodePositions[li];
+  const to   = nodePositions[li + 1];
+  from.forEach(f => {
+    to.forEach(t => {
+      const opacity = (Math.random() * 0.12 + 0.03).toFixed(3);
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', f.x); line.setAttribute('y1', f.y);
+      line.setAttribute('x2', t.x); line.setAttribute('y2', t.y);
+      line.setAttribute('stroke', `rgba(150,160,200,${opacity})`);
+      line.setAttribute('stroke-width', '0.8');
+      svg.appendChild(line);
+    });
+  });
+}
+
+// Draw nodes
+nodePositions.forEach((layer, li) => {
+  layer.forEach(n => {
+    const isActive = Math.random() > 0.55;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx', n.x);
+    circle.setAttribute('cy', n.y);
+    circle.setAttribute('r', isActive ? 5 : 3.5);
+    circle.setAttribute('fill', isActive ? 'rgba(204,40,40,0.7)' : 'rgba(120,140,190,0.45)');
+    svg.appendChild(circle);
+
+    // glow on active
+    if (isActive) {
+      const glow = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      glow.setAttribute('cx', n.x);
+      glow.setAttribute('cy', n.y);
+      glow.setAttribute('r', 12);
+      glow.setAttribute('fill', 'rgba(204,40,40,0.07)');
+      svg.insertBefore(glow, circle);
+    }
+  });
+});
+</script>
+</body>
+</html>
